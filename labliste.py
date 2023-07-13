@@ -52,16 +52,18 @@ def read_config(filename):
     reader = csv.DictReader( file, delimiter=';' )
     config = []
     for line in reader:
-        config.append( line["RV-KUERZEL"] )
+        config.append( line )
     return config
+
 
 def labliste(dir):
     if not os.path.exists( dir ):
         err_exit( dir+" existiert nicht." )
     config = read_config( os.path.join( dir, "konfiguration.csv" ) )
     warning = False
-    for line in config:
-        subdir = os.path.join( dir, line )
+    for cfg in config:
+        rv = cfg["RV-KUERZEL"]
+        subdir = os.path.join( dir, rv )
         entries = os.listdir( subdir )
         if len( entries ) == 0:
             warn( subdir+" ist leer" )
@@ -73,8 +75,10 @@ def labliste(dir):
         sys.exit( 1 )
         
     csvrows = []
-    for line in config:
-        subdir = os.path.join( dir, line )
+    addr_total = 0
+    for cfg in config:
+        rv = cfg["RV-KUERZEL"]
+        subdir = os.path.join( dir, rv )
         entries = os.listdir( subdir )
         filename = os.path.join( subdir, entries[0] )
         encoding = 'utf-8-sig'
@@ -91,6 +95,7 @@ def labliste(dir):
         
         addr_no = 0
         mgl_generated = 0
+        found_pruef_mgl = False
         for inrow in reader:
             addr_no += 1
             mitglieds_nr = inrow[str_mitglieds_nr]
@@ -99,6 +104,8 @@ def labliste(dir):
                 mitglieds_nr = "{:06}".format( mgl_generated )
             elif len( mitglieds_nr) != 6:
                 logerror( 'Fehlerhafte Mitglieds-Nr in '+filename+'/Adressnummer '+str( addr_no ) )
+            if cfg["PRUEF_MGLNR"] != '' and cfg["PRUEF_MGLNR"] == mitglieds_nr:
+                found_pruef_mgl = True
             mitglieds_nr = mitglieds_nr # TODO: line+mitglieds_nr
             anrede = inrow[str_anrede]
             if anrede == '':
@@ -125,11 +132,18 @@ def labliste(dir):
                 anz_labyrinth = '1'
             outrow = [mitglieds_nr, adr_z1, adr_z2, adr_z3, plz, inrow['Ort'], land, inrow['Straße'], anz_labyrinth]
             csvrows.append( outrow )
-        loginfo( str( addr_no )+' Adresse(n) aus '+filename+' gelesen' )
+        loginfo( str( addr_no ).rjust(4)+' Adresse(n) aus '+filename+' gelesen' )
+        addr_total += addr_no
+        if addr_no < int( cfg["ADDR_MIN"] ) or addr_no > int( cfg["ADDR_MAX"] ):
+            logerror( 'Anzahl der Adressen nicht im Bereich '+cfg["ADDR_MIN"]+"-"+cfg["ADDR_MAX"] )
+        if cfg["PRUEF_MGLNR"] != '' and not found_pruef_mgl:
+            logerror( 'Mitgliedsnummer '+cfg["PRUEF_MGLNR"]+' nicht gefunden' )
         if mgl_generated > 0:
             loginfo( '=> '+str( mgl_generated )+' Mitglieds-Nr erzeugt' )
         csv_file.close()
     if n_error == 0:
+        loginfo( '====' )
+        loginfo( str( addr_total ).rjust(4)+' Adresse(n) insgesamt' )
         tstamp = time.strftime( '%Y-%m-%d_%H-%M-%S' )
 
         logfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".log" )
@@ -147,6 +161,7 @@ def labliste(dir):
             logfile.write( logline+'\n' )
         csvfile.close()
         logfile.close()
+        printerr( '' )
         printerr( 'Das Verzeichnis '+dir+' konnte verarbeitet werden, es wurden folgende Ausgabedateien erzeugt:' )
         printerr( '  '+csvfn )
         printerr( '  '+logfn )
