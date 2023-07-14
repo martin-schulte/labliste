@@ -120,7 +120,6 @@ def labliste(dir):
         mgl_generated = 0
         found_pruef_mgl = False
         for inrow in reader:
-            addr_no += 1
             mitglieds_nr = inrow[str_mitglieds_nr]
             if len( mitglieds_nr ) == 0:
                 mgl_generated += 1
@@ -154,8 +153,12 @@ def labliste(dir):
             else:
                 anz_labyrinth = '1'
             labyrinth_total += int( anz_labyrinth )
-            outrow = [mitglieds_nr, adr_z1, adr_z2, adr_z3, plz, inrow['Ort'], land, inrow['Straße'], anz_labyrinth]
-            csvrows.append( outrow )
+            if int( anz_labyrinth ) > 0:
+                outrow = [mitglieds_nr, adr_z1, adr_z2, adr_z3, plz, inrow['Ort'], land, inrow['Straße'], anz_labyrinth]
+                csvrows.append( outrow )
+                addr_no += 1
+            else:
+                loginfo( str_anz_labyrinth+'='+str( anz_labyrinth )+' bei Mitglieds-Nr '+mitglieds_nr )
         loginfo( str( addr_no ).rjust(4)+' Adresse(n) aus '+filename+' gelesen' )
         addr_total += addr_no
         if addr_no < addr_min or addr_no > addr_max:
@@ -165,14 +168,13 @@ def labliste(dir):
         if mgl_generated > 0:
             loginfo( '=> '+str( mgl_generated )+' Mitglieds-Nr erzeugt' )
         csv_file.close()
-    if n_error == 0:
-        loginfo( '====' )
-        loginfo( str( addr_total ).rjust( 4 )+' Adresse(n) insgesamt' )
-        loginfo( str( labyrinth_total ).rjust( 4 )+' Exemplare insgesamt' )
-        write_out( dir, csvrows )
-    else:
+    if n_error > 0:
         printerr('Es wurden keine Ausgabedateien erzeugt, da mindestens ein Fehler aufgetreten ist.')
         sys.exit(1)
+    loginfo( '====' )
+    loginfo( str( addr_total ).rjust( 4 )+' Adresse(n) insgesamt' )
+    loginfo( str( labyrinth_total ).rjust( 4 )+' Exemplare insgesamt' )
+    write_out( dir, csvrows )
 
 def verzeichnisse_erstellen(dir):
     if os.path.exists( dir ):
