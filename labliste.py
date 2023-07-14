@@ -55,29 +55,52 @@ def read_config(filename):
         config.append( line )
     return config
 
+def write_out(dir, csvrows):
+    tstamp = time.strftime( '%Y-%m-%d_%H-%M-%S' )
+
+    logfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".log" )
+    csvfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".csv" )
+
+    logfile = open( logfn, 'w', encoding='UTF-8' )
+    csvfile = open( csvfn, 'w', encoding='UTF-8' )
+
+    csvwriter = csv.writer( csvfile, delimiter=';' )
+    csvwriter.writerow( outheader )
+    for csvrow in csvrows:
+        csvwriter.writerow( csvrow )
+
+    for logline in loglines:
+        logfile.write( logline+'\n' )
+    csvfile.close()
+    logfile.close()
+    printerr( '' )
+    printerr( 'Das Verzeichnis '+dir+' konnte verarbeitet werden, es wurden folgende Ausgabedateien erzeugt:' )
+    printerr( '  '+csvfn )
+    printerr( '  '+logfn )
 
 def labliste(dir):
     if not os.path.exists( dir ):
         err_exit( dir+" existiert nicht." )
     config = read_config( os.path.join( dir, "konfiguration.csv" ) )
-    warning = False
     for cfg in config:
         rv = cfg["RV-KUERZEL"]
         subdir = os.path.join( dir, rv )
         entries = os.listdir( subdir )
         if len( entries ) == 0:
-            warn( subdir+" ist leer" )
-            warning = True
+            logerror( subdir+" ist leer" )
         elif len( entries ) > 1:
-            warn( subdir+" enthält mehr als eine Datei." )
-            warning = True
-    if warning:
+            logerror( subdir+" enthält mehr als eine Datei." )
+    if n_error > 0:
         sys.exit( 1 )
         
     csvrows = []
     addr_total = 0
+    labyrinth_total = 0
     for cfg in config:
         rv = cfg["RV-KUERZEL"]
+        pruef_mglnr = cfg["PRUEF_MGLNR"]
+        addr_min = int( cfg["ADDR_MIN"] )
+        addr_max = int( cfg["ADDR_MAX"] )
         subdir = os.path.join( dir, rv )
         entries = os.listdir( subdir )
         filename = os.path.join( subdir, entries[0] )
@@ -104,9 +127,9 @@ def labliste(dir):
                 mitglieds_nr = "{:06}".format( mgl_generated )
             elif len( mitglieds_nr) != 6:
                 logerror( 'Fehlerhafte Mitglieds-Nr in '+filename+'/Adressnummer '+str( addr_no ) )
-            if cfg["PRUEF_MGLNR"] != '' and cfg["PRUEF_MGLNR"] == mitglieds_nr:
+            if pruef_mglnr != '' and pruef_mglnr == mitglieds_nr:
                 found_pruef_mgl = True
-            mitglieds_nr = mitglieds_nr # TODO: line+mitglieds_nr
+            # TODO: mitglieds_nr = rv+mitglieds_nr
             anrede = inrow[str_anrede]
             if anrede == '':
                 adr_z1 = inrow[str_nachname]
@@ -130,41 +153,23 @@ def labliste(dir):
                     logerror( 'Fehlerhafter Wert in Spalte '+str_anz_labyrinth+' in '+infn+'/Adressnummer '+str( addr_no ) )
             else:
                 anz_labyrinth = '1'
+            labyrinth_total += int( anz_labyrinth )
             outrow = [mitglieds_nr, adr_z1, adr_z2, adr_z3, plz, inrow['Ort'], land, inrow['Straße'], anz_labyrinth]
             csvrows.append( outrow )
         loginfo( str( addr_no ).rjust(4)+' Adresse(n) aus '+filename+' gelesen' )
         addr_total += addr_no
-        if addr_no < int( cfg["ADDR_MIN"] ) or addr_no > int( cfg["ADDR_MAX"] ):
-            logerror( 'Anzahl der Adressen nicht im Bereich '+cfg["ADDR_MIN"]+"-"+cfg["ADDR_MAX"] )
-        if cfg["PRUEF_MGLNR"] != '' and not found_pruef_mgl:
-            logerror( 'Mitgliedsnummer '+cfg["PRUEF_MGLNR"]+' nicht gefunden' )
+        if addr_no < addr_min or addr_no > addr_max:
+            logerror( 'Anzahl der Adressen nicht im Bereich '+str( addr_min )+"-"+str( addr_max ) )
+        if pruef_mglnr != '' and not found_pruef_mgl:
+            logerror( 'Mitgliedsnummer '+pruef_mglnr+' nicht gefunden' )
         if mgl_generated > 0:
             loginfo( '=> '+str( mgl_generated )+' Mitglieds-Nr erzeugt' )
         csv_file.close()
     if n_error == 0:
         loginfo( '====' )
-        loginfo( str( addr_total ).rjust(4)+' Adresse(n) insgesamt' )
-        tstamp = time.strftime( '%Y-%m-%d_%H-%M-%S' )
-
-        logfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".log" )
-        csvfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".csv" )
-
-        logfile = open( logfn, 'w', encoding='UTF-8' )
-        csvfile = open( csvfn, 'w', encoding='UTF-8' )
-
-        csvwriter = csv.writer( csvfile, delimiter=';' )
-        csvwriter.writerow( outheader )
-        for csvrow in csvrows:
-            csvwriter.writerow( csvrow )
-
-        for logline in loglines:
-            logfile.write( logline+'\n' )
-        csvfile.close()
-        logfile.close()
-        printerr( '' )
-        printerr( 'Das Verzeichnis '+dir+' konnte verarbeitet werden, es wurden folgende Ausgabedateien erzeugt:' )
-        printerr( '  '+csvfn )
-        printerr( '  '+logfn )
+        loginfo( str( addr_total ).rjust( 4 )+' Adresse(n) insgesamt' )
+        loginfo( str( labyrinth_total ).rjust( 4 )+' Exemplare insgesamt' )
+        write_out( dir, csvrows )
     else:
         printerr('Es wurden keine Ausgabedateien erzeugt, da mindestens ein Fehler aufgetreten ist.')
         sys.exit(1)
@@ -174,8 +179,9 @@ def verzeichnisse_erstellen(dir):
         err_exit( dir+" existiert schon." )
     config = read_config( "konfiguration-neu.csv" )
     os.mkdir( dir )
-    for subdir in config:
-        os.mkdir( os.path.join( dir, subdir ) )
+    for cfg in config:
+        rv = cfg["RV-KUERZEL"]
+        os.mkdir( os.path.join( dir, rv ) )
     os.mkdir( os.path.join( dir, "ZIEL" ) )
     shutil.copyfile( "konfiguration-neu.csv", os.path.join( dir, "konfiguration.csv" ) )
 
