@@ -130,13 +130,23 @@ def labliste(dir):
                 found_pruef_mgl = True
             # TODO: mitglieds_nr = rv+mitglieds_nr
             anrede = inrow[str_anrede]
+            vorname = inrow[str_vorname]
+            nachname = inrow[str_nachname]
+            if vorname == '_':
+                vorname = ''
+            if anrede == '_':
+                anrede = ''
             if anrede == '':
-                adr_z1 = inrow[str_nachname]
-                adr_z2 = inrow[str_vorname]
+                loginfo( 'Keine Anrede bei '+mitglieds_nr+"/"+nachname )
+                adr_z1 = nachname
+                adr_z2 = vorname
             else:
                 adr_z1 = anrede if anrede != 'Herr' else 'Herrn' # TODO: Das ist veraltet
-                adr_z2 = inrow[str_vorname]+' '+inrow[str_nachname]
-                if str_titel in reader.fieldnames and inrow[str_titel] != '': adr_z2 = inrow[str_titel]+' '+adr_z2
+                adr_z2 = nachname
+                if vorname != '':
+                    adr_z2 = vorname + ' ' + adr_z2
+                if str_titel in reader.fieldnames and inrow[str_titel] != '':
+                    adr_z2 = inrow[str_titel]+' '+adr_z2
             adr_z3 = inrow[str_zusatzadresse] if str_zusatzadresse in reader.fieldnames else ''
             plz = inrow['PLZ']
             land = inrow[str_land]
