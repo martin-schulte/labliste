@@ -137,10 +137,12 @@ def labliste(dir):
             if anrede == '_':
                 anrede = ''
             if anrede == '':
-                loginfo( 'Keine Anrede bei '+mitglieds_nr+"/"+nachname )
+                printerr( 'Keine Anrede bei '+mitglieds_nr+"/"+nachname )
                 adr_z1 = nachname
                 adr_z2 = vorname
             else:
+                if anrede not in ['Herr', 'Herrn', 'Frau', 'Familie']:
+                    printerr( 'Anrede='+anrede+' bei '+mitglieds_nr+"/"+nachname )
                 adr_z1 = anrede if anrede != 'Herr' else 'Herrn' # TODO: Das ist veraltet
                 adr_z2 = nachname
                 if vorname != '':
@@ -148,6 +150,8 @@ def labliste(dir):
                 if str_titel in reader.fieldnames and inrow[str_titel] != '':
                     adr_z2 = inrow[str_titel]+' '+adr_z2
             adr_z3 = inrow[str_zusatzadresse] if str_zusatzadresse in reader.fieldnames else ''
+            if adr_z3 != '':
+                printerr( 'adr_z3='+adr_z3+' bei '+mitglieds_nr+"/"+nachname )
             plz = inrow['PLZ']
             land = inrow[str_land]
             if land.upper() == 'DEUTSCHLAND':
