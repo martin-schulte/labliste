@@ -62,9 +62,9 @@ def write_out(dir, csvrows):
     csvfn = os.path.join( dir, "ZIEL", "printec_"+tstamp+".csv" )
 
     logfile = open( logfn, 'w', encoding='UTF-8' )
-    csvfile = open( csvfn, 'w', encoding='UTF-8' )
+    csvfile = open( csvfn, 'w', encoding='UTF-8-SIG' )
 
-    csvwriter = csv.writer( csvfile, delimiter=';' )
+    csvwriter = csv.writer( csvfile, delimiter=';', lineterminator='\n' )
     csvwriter.writerow( outheader )
     for csvrow in csvrows:
         csvwriter.writerow( csvrow )
