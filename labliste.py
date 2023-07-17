@@ -105,8 +105,8 @@ def labliste(dir):
         entries = os.listdir( subdir )
         filename = os.path.join( subdir, entries[0] )
         encoding = 'utf-8-sig'
-#        if line == 'HE':
-#            encoding = 'iso-8859-1'
+        if rv == 'NB' or rv == 'BW':
+            encoding = 'ansi'
         csv_file = open( filename, encoding=encoding )
         reader = csv.DictReader( csv_file, delimiter=';' )
         missing_required = []
@@ -137,12 +137,12 @@ def labliste(dir):
             if anrede == '_':
                 anrede = ''
             if anrede == '':
-                printerr( 'Keine Anrede bei '+mitglieds_nr+"/"+nachname )
+#                printerr( 'Keine Anrede bei '+mitglieds_nr+"/"+nachname )
                 adr_z1 = nachname
                 adr_z2 = vorname
             else:
-                if anrede not in ['Herr', 'Herrn', 'Frau', 'Familie']:
-                    printerr( 'Anrede='+anrede+' bei '+mitglieds_nr+"/"+nachname )
+#                if anrede not in ['Herr', 'Herrn', 'Frau', 'Familie']:
+#                    printerr( 'Anrede='+anrede+' bei '+mitglieds_nr+"/"+nachname )
                 adr_z1 = anrede if anrede != 'Herr' else 'Herrn' # TODO: Das ist veraltet
                 adr_z2 = nachname
                 if vorname != '':
@@ -150,14 +150,14 @@ def labliste(dir):
                 if str_titel in reader.fieldnames and inrow[str_titel] != '':
                     adr_z2 = inrow[str_titel]+' '+adr_z2
             adr_z3 = inrow[str_zusatzadresse] if str_zusatzadresse in reader.fieldnames else ''
-            if adr_z3 != '':
-                printerr( 'adr_z3='+adr_z3+' bei '+mitglieds_nr+"/"+nachname )
+#            if adr_z3 != '':
+#                printerr( 'adr_z3='+adr_z3+' bei '+mitglieds_nr+"/"+nachname )
             plz = inrow['PLZ']
             land = inrow[str_land]
             if land.upper() == 'DEUTSCHLAND':
                 land = ''
             if land == '' and not re.match( '^[0-9]{5}$', plz ):
-                logerror( 'Fehlerhafte PLZ in '+filename+'/Adressnummer '+str( addr_no ) )
+                logerror( 'Fehlerhafte PLZ in '+filename+'/Adressnummer '+str( addr_no )+'/'+nachname )
             if str_anz_labyrinth in reader.fieldnames:
                 anz_labyrinth = inrow[str_anz_labyrinth]
                 if anz_labyrinth == '':
